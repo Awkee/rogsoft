@@ -27,16 +27,16 @@ set_skin(){
 	local ROG_FLAG=$(grep -o "680516" /www/form_style.css 2>/dev/null|head -n1)
 	local TUF_FLAG=$(grep -o "D0982C" /www/form_style.css 2>/dev/null|head -n1)
 	local TS_FLAG=$(grep -o "2ED9C3" /www/css/difference.css 2>/dev/null|head -n1)
-	if [ -n "${ROG_FLAG}" ];then
-		UI_TYPE="ROG"
-	fi
-	if [ -n "${TUF_FLAG}" ];then
-		UI_TYPE="TUF"
-	fi
 	if [ -n "${TS_FLAG}" ];then
 		UI_TYPE="TS"
+	else
+		if [ -n "${TUF_FLAG}" ];then
+			UI_TYPE="TUF"
+		fi
+		if [ -n "${ROG_FLAG}" ];then
+			UI_TYPE="ROG"
+		fi	
 	fi
-
 	if [ -z "${SC_SKIN}" -o "${SC_SKIN}" != "${UI_TYPE}" ];then
 		nvram set sc_skin="${UI_TYPE}"
 		nvram commit
@@ -325,7 +325,9 @@ install_ks_module() {
 	# 15. 一些插件并未使用nvram值sc_skin来控制插件皮肤，还是使用的老的方式，做下兼容
 	# set_skin once to get UI_TYPE
 	set_skin
-	if [ "${softcenter_installing_todo}" != "softcenter" -a "${softcenter_installing_todo}" != "koolcenter" ];then
+
+	local skin_flag=$(grep -o "skin=" /tmp/${softcenter_installing_todo}/webs/Module_${softcenter_installing_todo}.asp)
+	if [ -z "${skin_flag}" -a "${softcenter_installing_todo}" != "softcenter" -a "${softcenter_installing_todo}" != "koolcenter" ];then
 		if [ "${UI_TYPE}" == "ROG" ];then
 			echo_date "为插件【${softcenter_installing_name}】安装ROG风格皮肤..."
 			sed -i '/asuscss/d' /tmp/${softcenter_installing_todo}/webs/Module_${softcenter_installing_todo}.asp >/dev/null 2>&1
@@ -359,6 +361,11 @@ install_ks_module() {
 		echo_date "-------------------------------------------------------------------"
 		echo_date "本次插件安装失败！退出！"
 		quit_ks_install
+	fi
+
+	# 16.5 一些插件安装好后需要进行一些改动
+	if [ "${softcenter_installing_todo}" == "xunyou" ];then
+		sed -i '/client_function\.js/d' /koolshare/webs/Module_xunyou.asp >/dev/null 2>&1
 	fi
 
 	# 17. set skin nvram value
